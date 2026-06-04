@@ -1,0 +1,31 @@
+site_name: Learning Bytes — Dynatrace Enablement
+theme:
+  name: material
+hooks:
+  - hooks.py
+nav:
+  - Log Analysis Fundamentals:
+      - Introduction to DQL Log Queries: log-analysis-fundamentals/00-introduction-to-dql-log-queries.md
+      - Counting and Aggregating Logs: log-analysis-fundamentals/01-counting-and-aggregating-logs.md
+      - Parsing Unstructured Logs: log-analysis-fundamentals/02-parsing-unstructured-logs.md
+  - Kubernetes Health Check:
+      - Pod Health & Restarts: kubernetes-health-check/00-pod-health-restarts.md
+      - Resource Limits & Requests: kubernetes-health-check/01-resource-limits-requests.md
+      - Cluster Events & Alerts: kubernetes-health-check/02-cluster-events-alerts.md
+  - Business Event Tracking:
+      - What Are Business Events?: business-event-tracking/00-what-are-business-events.md
+      - Querying Business Events: business-event-tracking/01-querying-business-events.md
+      - OpenPipeline Processing: business-event-tracking/02-openpipeline-processing.md
+  - Security Vulnerability Assessment:
+      - Runtime Vulnerability Detection: security-vulnerability-assessment/00-runtime-vulnerability-detection.md
+      - Risk Assessment & Prioritization: security-vulnerability-assessment/01-risk-assessment-prioritization.md
+      - Remediation Workflows: security-vulnerability-assessment/02-remediation-workflows.md
+  - SLO Configuration Workshop:
+      - SLI & SLO Fundamentals: slo-configuration-workshop/00-sli-slo-fundamentals.md
+      - Defining SLOs in Dynatrace: slo-configuration-workshop/01-defining-slos-in-dynatrace.md
+      - Burn-Rate Alerts: slo-configuration-workshop/02-burn-rate-alerts.md
+  - Davis AI Problem Analysis:
+      - Anomaly Detection: davis-ai-problem-analysis/00-anomaly-detection.md
+      - Problem Correlation & Root Cause: davis-ai-problem-analysis/01-problem-correlation-root-cause.md
+  - ⚡ BizEvent Ingestion Test:
+      - Validation Question: test-bizevent-ingestion/00-validation-question.md
