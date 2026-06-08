@@ -1,3 +1,13 @@
+---
+description: Learn how to capture, send, and query business events in Dynatrace. Understand the BizEvents pipeline from instrumentation to dashboard.
+tags:
+  - business-analytics
+  - bizevents
+  - dql
+difficulty: beginner
+duration: 8
+---
+
 > **Scenario** — Your e-commerce team wants to track checkout funnel conversions. You'll set up business event capture to measure cart additions, checkout starts, and completed purchases.
 >
 > **Your goal:** Understand the business events pipeline and how to query conversion data with DQL.

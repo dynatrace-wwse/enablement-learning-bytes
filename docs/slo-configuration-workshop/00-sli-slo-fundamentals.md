@@ -1,3 +1,13 @@
+---
+description: Design and configure Service Level Objectives in Dynatrace. Learn to define SLIs, set error budgets, and create burn-rate alerts.
+tags:
+  - sre
+  - slos
+  - reliability
+difficulty: advanced
+duration: 10
+---
+
 > **Scenario** — Your organization is adopting SRE practices. The platform team needs to define SLOs for critical customer-facing services with appropriate error budgets and alerting.
 >
 > **Your goal:** Design effective SLOs, understand error budget policies, and configure burn-rate alerts.

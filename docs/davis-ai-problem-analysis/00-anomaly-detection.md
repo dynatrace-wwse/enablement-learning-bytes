@@ -1,3 +1,13 @@
+---
+description: Understand how Davis AI detects anomalies, correlates problems, and determines root cause. Test your knowledge of the Davis problem lifecycle.
+tags:
+  - observability
+  - davis-ai
+  - root-cause
+difficulty: intermediate
+duration: 10
+---
+
 > **Scenario** — Multiple alerts are firing across your environment. Davis AI has identified the root cause and grouped related symptoms. You need to interpret the findings.
 >
 > **Your goal:** Demonstrate understanding of Davis AI's anomaly detection, problem correlation, and root cause analysis.

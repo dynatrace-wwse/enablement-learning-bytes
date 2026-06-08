@@ -1,3 +1,13 @@
+---
+description: A single-question test training for validating that completion events are correctly written to local Grail. Can be retaken as many times as needed.
+tags:
+  - test
+  - bizevents
+  - lab
+difficulty: beginner
+duration: 5
+---
+
 > **Scenario** — This training exists solely to test biz event ingestion.
 >
 > **Your goal:** Complete it, then verify a `com.dynatrace.enablement.training.completed` event appears in Grail.

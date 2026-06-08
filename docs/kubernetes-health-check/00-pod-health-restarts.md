@@ -1,3 +1,13 @@
+---
+description: Assess your knowledge of monitoring Kubernetes clusters with Dynatrace. Covers pod health, resource utilization, and cluster events.
+tags:
+  - cloud-ops
+  - kubernetes
+  - infrastructure
+difficulty: intermediate
+duration: 10
+---
+
 > **Scenario** — A critical production cluster is showing degraded performance. Pods are restarting and resource limits are being hit. Your job is to identify and triage the issues.
 >
 > **Your goal:** Demonstrate your ability to diagnose Kubernetes cluster issues using Dynatrace observability data.

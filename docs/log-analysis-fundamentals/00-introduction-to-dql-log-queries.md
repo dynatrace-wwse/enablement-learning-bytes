@@ -1,3 +1,14 @@
+---
+description: Learn to query, filter, and analyze log data using DQL. Covers basic log exploration, filtering by severity, and extracting patterns from unstructured logs.
+tags:
+  - observability
+  - logs
+  - dql
+  - beginner
+difficulty: beginner
+duration: 8
+---
+
 > **Scenario** — Your team has deployed a new microservice and users are reporting intermittent errors. You need to investigate the logs to find the root cause.
 >
 > **Your goal:** Use DQL to explore logs, identify error patterns, and pinpoint the failing component.
