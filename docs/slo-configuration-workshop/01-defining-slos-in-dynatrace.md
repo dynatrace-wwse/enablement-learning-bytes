@@ -24,10 +24,28 @@ Dynatrace SLOs combine an SLI metric expression with a target and evaluation win
 
 ```dql
 timeseries {
-  total = avg(dt.service.request.count),
-  errors = avg(dt.service.request.failure_count)
-}
-| fieldsAdd sli = 100.0 - arrayAvg(errors) / arrayAvg(total) * 100
+  total  = sum(dt.service.request.count),
+  failed = sum(dt.service.request.failure_count)
+}, from:now()-30d
+| fieldsAdd sli = 100.0 * (arraySum(total) - arraySum(failed)) / arraySum(total)
+```
+
+> **`sum()`, not `avg()`.** `dt.service.request.count` is a counter. Averaging it gives
+> you "requests per interval", and a ratio of two averages is only equal to the ratio of
+> the underlying totals when every bucket carries the same traffic — which is exactly
+> what never happens. Averaging silently over-weights your quiet 3 a.m. buckets against
+> your busy midday ones, so the SLI reads better than reality during an incident that
+> starts at peak. Sum the numerator and denominator, then divide once.
+
+Guard the empty window too — a service with no traffic divides by zero:
+
+```dql
+timeseries {
+  total  = sum(dt.service.request.count),
+  failed = sum(dt.service.request.failure_count)
+}, from:now()-30d
+| fieldsAdd reqs = arraySum(total), errs = arraySum(failed)
+| fieldsAdd sli = if(reqs > 0, 100.0 * (reqs - errs) / reqs, else: 100.0)
 ```
 
 ## Choosing the Right Window

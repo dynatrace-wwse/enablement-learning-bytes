@@ -27,5 +27,5 @@ nav:
   - Davis AI Problem Analysis:
       - Anomaly Detection: davis-ai-problem-analysis/00-anomaly-detection.md
       - Problem Correlation & Root Cause: davis-ai-problem-analysis/01-problem-correlation-root-cause.md
-  - ⚡ BizEvent Ingestion Test:
+  - BizEvent Ingestion Test:
       - Validation Question: test-bizevent-ingestion/00-validation-question.md

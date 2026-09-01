@@ -20,14 +20,38 @@ Monitoring pod health is essential for Kubernetes operations. Key metrics includ
 - **Restart count**: High restarts indicate crashlooping containers
 - **Ready condition**: Whether all containers in the pod are ready to serve traffic
 
-## Querying Pod Restarts
+## Querying Restarts
+
+Restarts are a **metric**, not an entity property, so this is a `timeseries` query — not
+a `fetch`:
 
 ```dql
-fetch dt.entity.cloud_application
-| fields entity.name, lifetime
-| filterOut isNull(entity.name)
-| sort entity.name asc
-| limit 10
+timeseries restarts = sum(dt.kubernetes.container.restarts),
+           by:{k8s.cluster.name, k8s.namespace.name, k8s.workload.name},
+           from:now()-6h
+| fieldsAdd totalRestarts = arraySum(restarts)
+| filter totalRestarts > 0
+| sort totalRestarts desc
+| limit 20
+```
+
+Two things an experienced operator reads into that query:
+
+- **`dt.kubernetes.container.restarts` is measured per container, and there is no
+  pod-level restart metric.** A pod with an app container and a sidecar reports two
+  series. Summing to `k8s.workload.name`, as above, is how you get the number a human
+  actually means when they say "this deployment is restarting".
+- **It is a counter.** `sum()` over the window gives you restarts *in that window*.
+  Do not read a single data point as "total restarts ever" — and be aware that a gap in
+  the series (agent restart, node drain) can make a naive delta look like a spike.
+
+To see which workloads are restarting *right now* rather than over the window, keep the
+series and look at its shape instead of collapsing it:
+
+```dql
+timeseries restarts = sum(dt.kubernetes.container.restarts),
+           by:{k8s.namespace.name, k8s.workload.name},
+           from:now()-2h, interval:5m
 ```
 
 ## Common Causes of Pod Restarts
