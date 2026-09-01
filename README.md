@@ -56,6 +56,28 @@ fact. `tools/validate_content.py` gates both, and CI runs it on every PR.
 python3 tools/validate_content.py     # exit 0 = safe to import
 ```
 
+### Two gates, and what each one cannot see
+
+`validate_content.py` is **static**. It runs with no tenant and proves arithmetic and
+structure: a threshold is reachable from the declared dataset, no `correct:` index is out
+of range, every question parses.
+
+What it can never see is the class of bug this content actually shipped with: DQL that is
+valid and matches nothing. `filter event.kind == "KUBERNETES_EVENT"` parses, executes,
+succeeds and returns zero rows forever, because Grail is schema-on-read and filtering on a
+field that does not exist is not an error. Four such queries were live.
+
+So a second gate runs nightly against a real tenant — `verifyLearningBytes` in the
+Enablement app, invoked by Orbital's nightly scheduler. It seeds each byte's dataset under
+a **fresh ephemeral scope**, waits for the records to be queryable, runs each graded query
+and evaluates the result with the *same* `evaluateDqlResult` the browser grades with. A
+fresh scope per run is what makes it a check rather than a ratchet: last night's data
+cannot satisfy tonight's assertion.
+
+It verifies only questions on a step that declares a seed. A DQL question with no seed
+reads whatever telemetry the tenant happens to have, so its failure would mean "the tenant
+is quiet tonight", not "the byte is broken" — and a nightly that cries wolf gets muted.
+
 ## Seed data — `<!-- LAB_SEED -->`
 
 A `dql-verification` question is only meaningful if the tenant holds data the query can
@@ -84,13 +106,28 @@ credential, no per-tenant setup. `cycle` values are applied round-robin across `
 records, and timestamps are spread backwards over `spreadMinutes`, so the data is already
 "historical" the moment it lands and a `from:now()-2h` query finds it.
 
-Rules that keep a shared tenant clean:
+Rules that keep a shared tenant clean. Grail business events are **append-only** — there
+is no update, no delete and no TTL you can set at ingest — so none of this can be cleaned
+up afterwards. Every control is either *don't write* or *scope the write*:
 
 | Rule | Why |
 |---|---|
-| Every record carries `event.provider` | Lab queries filter on it, so seed data can never be mistaken for production traffic, and lab queries can never read production traffic. |
-| ≤ 500 records per record-spec, ≤ 1000 per run | Enforced by the validator. A byte is a demo, not a load test. |
-| Thresholds use `gte`, never `eq` | Loading the data twice must not break the check. |
+| Every record carries `event.provider` under `dynatrace.enablement.` | Lab queries filter on it, so seed data can never be mistaken for production traffic, and lab queries can never read production traffic. Enforced at ingest, not only here. |
+| Every record carries `dt.enablement.seed.scope`, and every graded query filters on it with `{{DT_SEED_SCOPE}}` | Thirty learners on one tenant seed the same event types at the same moment. Without the scope, learner B's check passes on learner A's records and B never has to press the button — a silent false pass. |
+| Pressing the button twice inside the window is a no-op | The app asks Grail whether this scope already holds this dataset. Volume is bounded at one dataset per learner per window, not one per click. |
+| ≤ 500 records per record-spec, ≤ 1000 per run | Enforced by the validator *and* re-enforced at ingest. A byte is a demo, not a load test. |
+| Thresholds use `gte`, never `eq` | Reloading after part of the data has aged out tops the set up rather than replacing it, so the count inside the window can exceed the declared total. |
+| A query's `from:` must be at least as wide as the seed's `spreadMinutes` | Records are backdated across the window; a narrower query cannot see the older half of its own dataset, and fails intermittently. |
+
+The scope is computed from the caller's own identity **server-side**, and a `scope` in the
+request payload is ignored — a learner must not be able to choose one, or they could read
+a classmate's. `{{DT_SEED_SCOPE}}` is deliberately *not* `{{DT_SESSION_ID}}`: the session
+id carries a UTC date, so data seeded at 23:59 would be unqueryable at 00:01.
+
+The one mechanism that ever *removes* seeded data is an OpenPipeline dynamic route on
+`event.provider startsWith "dynatrace.enablement."` into a short-retention bucket. That is
+a per-tenant admin action nobody can assume on a customer tenant, which is why the rules
+above have to stand on their own.
 
 **The validator enforces that the queries and the data agree.** It aggregates each byte's
 `LAB_SEED` declarations, extracts the aggregation and `event.type` from each

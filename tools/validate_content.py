@@ -197,6 +197,56 @@ AGG_RE = re.compile(r"(\w+)\s*=\s*(count\(\)|sum\(([\w.]+)\))")
 ETYPE_RE = re.compile(r'event\.type\s*==\s*"([^"]+)"')
 
 
+SEED_SCOPE_FIELD = "dt.enablement.seed.scope"
+SEED_SCOPE_VAR = "{{DT_SEED_SCOPE}}"
+SEED_PROVIDER_PREFIX = "dynatrace.enablement."
+
+FROM_RE = re.compile(r"from:\s*now\(\)\s*-\s*(\d+)\s*([smhd])")
+_UNIT_MINUTES = {"s": 1 / 60, "m": 1, "h": 60, "d": 1440}
+
+
+def check_seed_scope(where: str, q: dict) -> None:
+    """A graded query over seeded data must read only THIS learner's records.
+
+    Every learner on a tenant seeds the same event types into the same provider
+    namespace. Without a scope filter, learner B's check passes on learner A's records
+    and B never has to press the button at all — a silent false pass, and the same shape
+    as the `endsWith(x, "")` trap the app's templateVars.ts documents.
+
+    The scope is stamped server-side by seedLearningBytes from the caller's own identity;
+    `{{DT_SEED_SCOPE}}` resolves to the same value in the browser.
+    """
+    dql = q.get("dql") or ""
+    if SEED_SCOPE_FIELD not in dql:
+        err(where, f"this byte seeds data, but the query does not filter on "
+                   f"{SEED_SCOPE_FIELD} — it would read every learner's records and can "
+                   f"pass on someone else's data")
+        return
+    if SEED_SCOPE_VAR not in dql:
+        err(where, f"filters on {SEED_SCOPE_FIELD} but not against {SEED_SCOPE_VAR} — a "
+                   f"hard-coded scope matches one person and nobody else")
+
+
+def check_seed_window(where: str, q: dict, widest_spread: float) -> None:
+    """The query's timeframe must cover the whole window the seed spreads records over.
+
+    Records are backdated across `spreadMinutes`. A query with a shorter `from:` simply
+    cannot see the older half of its own dataset, so a threshold that the arithmetic says
+    is reachable is not reachable in practice — and it fails intermittently, which is
+    worse than failing outright.
+    """
+    dql = q.get("dql") or ""
+    m = FROM_RE.search(dql)
+    if not m:
+        warn(where, "no `from:now()-N` in the query — it will use the default timeframe, "
+                    "which is not something this byte controls")
+        return
+    minutes = int(m.group(1)) * _UNIT_MINUTES[m.group(2)]
+    if minutes < widest_spread:
+        err(where, f"queries the last {minutes:g}m but the seed spreads records over "
+                   f"{widest_spread:g}m — the older records are invisible to this query")
+
+
 def check_seed_coupling(where: str, q: dict, totals: dict) -> None:
     """A dql-verification threshold must be reachable from the seed declared in the byte."""
     dql = q.get("dql") or ""
@@ -222,7 +272,13 @@ def check_seed_coupling(where: str, q: dict, totals: dict) -> None:
         return
     want = float(expect["value"])
     op = expect["operator"]
-    ok = (available >= want) if op == "gte" else (available > want) if op == "gt" else (available == want)
+    if op == "eq":
+        err(where, "an exact-equality threshold over seeded data is not stable: a learner "
+                   "who reloads the demo data after part of it has aged out gets a top-up, "
+                   "so the count inside the query window can exceed the declared total. "
+                   "Use gte.")
+        return
+    ok = (available >= want) if op == "gte" else (available > want)
     if not ok:
         err(where, f"seed produces {field}={available:g} for {etype}, but the check requires "
                    f"{op} {want:g} — this question can never pass")
@@ -256,8 +312,16 @@ def main() -> int:
                 w = f"{rp}#seed{i}"
                 if not isinstance(seed.get("dataset"), str):
                     err(w, "LAB_SEED missing 'dataset'")
-                if not isinstance(seed.get("provider"), str):
+                provider = seed.get("provider")
+                if not isinstance(provider, str):
                     err(w, "LAB_SEED missing 'provider' — seed data must be namespaced")
+                elif not provider.startswith(SEED_PROVIDER_PREFIX):
+                    err(w, f"provider {provider!r} is outside the reserved "
+                           f"{SEED_PROVIDER_PREFIX!r} namespace. seedLearningBytes refuses "
+                           "it at ingest, so this byte's button would fail for every learner")
+                spread = seed.get("spreadMinutes", 60)
+                if not isinstance(spread, int) or not 1 <= spread <= 1440:
+                    err(w, f"spreadMinutes {spread!r} outside 1..1440")
                 recs = seed.get("records")
                 if not isinstance(recs, list) or not recs:
                     err(w, "LAB_SEED has no 'records'")
@@ -281,9 +345,23 @@ def main() -> int:
                 questions_in_byte.append((w, q))
 
         totals = seed_totals(seeds_in_byte)
+        widest_spread = max(
+            (s.get("spreadMinutes", 60) for s in seeds_in_byte
+             if isinstance(s.get("spreadMinutes", 60), int)),
+            default=0,
+        )
+        graded_dql = 0
         for w, q in questions_in_byte:
-            if q.get("type") == "dql-verification":
-                check_seed_coupling(w, q, totals)
+            if q.get("type") != "dql-verification":
+                continue
+            graded_dql += 1
+            check_seed_coupling(w, q, totals)
+            if seeds_in_byte:
+                check_seed_scope(w, q)
+                check_seed_window(w, q, widest_spread)
+        if seeds_in_byte and graded_dql == 0:
+            warn(f"{title}", "declares a LAB_SEED but grades no dql-verification against it "
+                             "— it writes records into every learner's tenant for nothing")
 
     for w in warnings:
         print(f"WARN  {w}")

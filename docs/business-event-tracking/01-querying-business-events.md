@@ -9,6 +9,12 @@ small, fixed set of business events into *this* tenant. It is bounded (77 record
 idempotent, and every record carries `event.provider = "dynatrace.enablement.learningbytes"`
 so it can never be confused with your production traffic.
 
+Every record is also stamped with **your own** seed scope, and each query below filters
+on it with `{{DT_SEED_SCOPE}}`. That is not decoration: on a shared tenant your classmates
+are seeding the same event types into the same provider at the same moment. Without the
+scope filter your "40 cart additions" would be everyone's cart additions, and the check
+would pass whether or not you ever pressed the button.
+
 <!-- LAB_SEED
 dataset: shop-funnel
 version: 1
@@ -49,6 +55,7 @@ stakeholder actually asks you about, and it is the reason business events exist.
 ```dql
 fetch bizevents, from:now()-2h
 | filter event.provider == "dynatrace.enablement.learningbytes"
+| filter dt.enablement.seed.scope == "{{DT_SEED_SCOPE}}"
 | filter event.type == "com.shop.purchase.complete"
 | sort timestamp desc
 | limit 20
@@ -57,6 +64,10 @@ fetch bizevents, from:now()-2h
 > **Always scope by `event.provider`.** On a real tenant `fetch bizevents` is a firehose
 > of every ingest source you have. Filtering on the provider is what makes a query
 > reproducible — and what stops a demo query from quietly reading production revenue.
+>
+> `dt.enablement.seed.scope` narrows it one step further, to the records *you* seeded.
+> The general lesson outlives this lab: a query you intend to be about one subject should
+> say so in a filter, rather than relying on being the only person generating that data.
 
 ## Funnel Analysis
 
@@ -66,6 +77,7 @@ and it does not silently change meaning when someone adds a fourth stage:
 ```dql
 fetch bizevents, from:now()-2h
 | filter event.provider == "dynatrace.enablement.learningbytes"
+| filter dt.enablement.seed.scope == "{{DT_SEED_SCOPE}}"
 | filter in(event.type, {"com.shop.cart.add",
                          "com.shop.checkout.start",
                          "com.shop.purchase.complete"})
@@ -80,6 +92,7 @@ buttonText: Run the funnel query
 dql: |
   fetch bizevents, from:now()-2h
   | filter event.provider == "dynatrace.enablement.learningbytes"
+  | filter dt.enablement.seed.scope == "{{DT_SEED_SCOPE}}"
   | filter event.type == "com.shop.cart.add"
   | summarize cartAdds = count()
 expect:
@@ -87,8 +100,9 @@ expect:
   field: cartAdds
   value: 40
 hint: Load the demo data first — the button above this section.
-explanation: The dataset ingests exactly 40 `com.shop.cart.add` records per run. The check
-  uses `gte`, not `eq`, so loading the data twice still passes.
+explanation: The dataset ingests exactly 40 `com.shop.cart.add` records per run, into your
+  own seed scope. The check uses `gte`, not `eq`, because reloading the demo data after part
+  of it has aged out tops the set up rather than replacing it.
 -->
 
 ## Revenue Calculation
@@ -98,6 +112,7 @@ explanation: The dataset ingests exactly 40 `com.shop.cart.add` records per run.
 ```dql
 fetch bizevents, from:now()-2h
 | filter event.provider == "dynatrace.enablement.learningbytes"
+| filter dt.enablement.seed.scope == "{{DT_SEED_SCOPE}}"
 | filter event.type == "com.shop.purchase.complete"
 | summarize totalRevenue = sum(total),
             orderCount   = count(),
@@ -113,6 +128,7 @@ buttonText: Verify revenue
 dql: |
   fetch bizevents, from:now()-2h
   | filter event.provider == "dynatrace.enablement.learningbytes"
+  | filter dt.enablement.seed.scope == "{{DT_SEED_SCOPE}}"
   | filter event.type == "com.shop.purchase.complete"
   | summarize totalRevenue = sum(total)
 expect:
@@ -130,6 +146,7 @@ explanation: '`sum(total)` over the 12 seeded `com.shop.purchase.complete` recor
 ```dql
 fetch bizevents, from:now()-2h
 | filter event.provider == "dynatrace.enablement.learningbytes"
+| filter dt.enablement.seed.scope == "{{DT_SEED_SCOPE}}"
 | makeTimeseries count(), by:{event.type}, interval:10m
 ```
 

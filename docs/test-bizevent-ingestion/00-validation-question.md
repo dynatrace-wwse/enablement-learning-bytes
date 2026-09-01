@@ -23,6 +23,11 @@ This byte checks two different things, and it is worth being precise about which
 Press the button. It ingests a handful of marker events into **this** tenant, through the
 same business-events ingest path the app uses for its own telemetry.
 
+Each record is stamped with your own seed scope, and the query below filters on it with
+`{{DT_SEED_SCOPE}}`. On a shared tenant that is what makes the result *yours*: without it
+you would be reading everyone's probes and the check would pass even if your own ingest
+had failed.
+
 <!-- LAB_SEED
 dataset: ingest-probe
 version: 1
@@ -41,6 +46,7 @@ Now read it back:
 ```dql
 fetch bizevents, from:now()-1h
 | filter event.provider == "dynatrace.enablement.learningbytes"
+| filter dt.enablement.seed.scope == "{{DT_SEED_SCOPE}}"
 | filter event.type == "com.dynatrace.enablement.seed.ingest.probe"
 | sort timestamp desc
 | limit 10
@@ -53,6 +59,7 @@ buttonText: Verify ingestion
 dql: |
   fetch bizevents, from:now()-1h
   | filter event.provider == "dynatrace.enablement.learningbytes"
+  | filter dt.enablement.seed.scope == "{{DT_SEED_SCOPE}}"
   | filter event.type == "com.dynatrace.enablement.seed.ingest.probe"
   | summarize probes = count()
 expect:
@@ -62,7 +69,8 @@ expect:
 hint: Press "Ingest a probe event" above first. Ingestion is not instantaneous — if the
   count is 0, wait a few seconds and verify again.
 explanation: The probe is written with the app's own AppEngine identity via the business
-  events ingest API, so a passing check proves this tenant accepts and indexes bizevents.
+  events ingest API, and scoped to you, so a passing check proves that *this* tenant accepted
+  and indexed *your* bizevents — not that someone else's probe once worked.
 -->
 
 ## 2. Where do *your* completion events go?

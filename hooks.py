@@ -134,6 +134,13 @@ def _render_seed(yaml_body: str) -> str:
         f'the last {_esc(seed.get("spreadMinutes", 60))} minutes. Ingested into the learner\'s own '
         f'tenant by the Enablement app.</p>'
     )
+    out.append(
+        '<p class="lab-seed-note">Each record also carries '
+        f'<code>dt.enablement.seed.scope</code>, set from the learner\'s own identity. '
+        'Every graded query in this byte must filter on it with '
+        '<code>{{DT_SEED_SCOPE}}</code> — otherwise a learner\'s check passes on a '
+        'classmate\'s records. <code>tools/validate_content.py</code> enforces that.</p>'
+    )
     out.append("</div>")
     return "".join(out)
 
