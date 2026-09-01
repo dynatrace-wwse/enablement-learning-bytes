@@ -9,13 +9,65 @@ Kubernetes events provide a running log of cluster-level activities. They're ess
 
 ## Querying Events in Dynatrace
 
+Kubernetes events are selected by **`event.provider`**, not `event.kind`:
+
 ```dql
-fetch events
-| filter event.kind == "KUBERNETES_EVENT"
-| filter event.type == "Warning"
+fetch events, from:now()-24h
+| filter event.provider == "KUBERNETES_EVENT"
+| fields timestamp,
+         k8s.cluster.name,
+         dt.kubernetes.event.reason,
+         dt.kubernetes.event.involved_object.kind,
+         dt.kubernetes.event.involved_object.name,
+         dt.kubernetes.event.message
 | sort timestamp desc
 | limit 50
 ```
+
+> **Why not `event.kind`?** `event.kind` describes the *Dynatrace* event family
+> (`DAVIS_EVENT`, `DAVIS_PROBLEM`, `SECURITY_EVENT`, …). There is no `KUBERNETES_EVENT`
+> kind, so `filter event.kind == "KUBERNETES_EVENT"` returns zero rows and no error.
+> `event.provider` is what identifies the ingest source.
+
+Kubernetes' own `Normal` / `Warning` classification arrives as **`status`** — `INFO` for
+Normal, `WARN` for Warning. It is *not* `event.type`: on an ingested Kubernetes event
+`event.type` is `CUSTOM_INFO` and `event.kind` is `DAVIS_EVENT`, for every one of them.
+
+```dql
+fetch events, from:now()-24h
+| filter event.provider == "KUBERNETES_EVENT"
+| filter status == "WARN"
+| fields timestamp, k8s.namespace.name, dt.kubernetes.event.reason, dt.kubernetes.event.message
+| sort timestamp desc
+| limit 50
+```
+
+When you meet an unfamiliar event source, resist guessing the field names — one `limit 1`
+settles it, and the answer is often not what the vendor's own examples imply:
+
+```dql
+fetch events, from:now()-24h
+| filter event.provider == "KUBERNETES_EVENT"
+| limit 1
+```
+
+In practice you rarely want "all Warnings" anyway; you want a specific failure mode,
+and `dt.kubernetes.event.reason` is the precise, stable way to ask for it:
+
+```dql
+fetch events, from:now()-24h
+| filter event.provider == "KUBERNETES_EVENT"
+| filter in(dt.kubernetes.event.reason,
+            {"OOMKilling", "BackOff", "FailedScheduling", "Unhealthy", "Evicted"})
+| summarize occurrences = count(),
+            by:{dt.kubernetes.event.reason, dt.kubernetes.event.involved_object.name}
+| sort occurrences desc
+| limit 25
+```
+
+> **Retention note**: Kubernetes only keeps events for about an hour by default
+> (`--event-ttl`). Dynatrace ingesting them into Grail is what makes a post-incident
+> query like the one above possible at all — the cluster itself has already forgotten.
 
 ## Setting Up Alerts
 

@@ -18,10 +18,38 @@ A processing rule might:
 
 ## Configuration
 
-OpenPipeline is configured via Settings:
-- Navigate to **Settings → OpenPipeline → Business Events**
-- Add processing rules with matchers and processors
-- Test with sample events before activating
+OpenPipeline has its own app. Open **OpenPipeline** from the Dynatrace launcher and pick
+the **Business events** data source (in older builds the same configuration sits under
+Settings → Process and contextualize → OpenPipeline).
+
+- Each data source has an ordered set of **pipelines**; a **dynamic route** decides which
+  pipeline an incoming record enters, and records that match no route take the default.
+- Inside a pipeline you add **processors** — parse, add fields, filter — and Dynatrace
+  lets you **test them against a sample record before you activate**. Use that. A
+  processing rule is applied at ingest, and ingest is not replayable.
+
+## Bucket assignment — the operationally important part
+
+A pipeline can also **assign a bucket**, and a bucket carries its own retention. This is
+how you stop business events from becoming an unbounded cost:
+
+- Send high-value, low-volume events (purchases, signups) to a long-retention bucket.
+- Send high-volume, low-value events (every cart interaction) to a short one.
+- Send synthetic, test, and demo traffic to a short-retention bucket so it ages out by
+  itself instead of being curated by hand.
+
+Which bucket a record actually landed in is readable as `dt.system.bucket`, so you can
+confirm your routing did what you intended rather than assuming it:
+
+```dql
+fetch bizevents, from:now()-24h
+| summarize records = count(), by:{dt.system.bucket}
+| sort records desc
+```
+
+Unrouted business events land in `default_bizevents`. If you built a routing rule and this
+query still shows everything in `default_bizevents`, the rule did not match — check the
+matcher before you check the processor.
 
 > **Best Practice**: Keep pipelines simple. Prefer doing complex transformations at query time (DQL) rather than at ingestion time.
 

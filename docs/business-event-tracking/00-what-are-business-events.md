@@ -1,5 +1,5 @@
 ---
-description: Learn how to capture, send, and query business events in Dynatrace. Understand the BizEvents pipeline from instrumentation to dashboard.
+description: Learn what business events are, how they are ingested, and how to query a conversion funnel with DQL. Ships a loadable demo dataset, so every query in this byte returns real data on your own tenant.
 tags:
   - business-analytics
   - bizevents

@@ -1,0 +1,25 @@
+name: Validate content
+
+# A wrong `correct:` index deadlocks every learner who reaches that step — the app has
+# no skip — and a malformed question block is dropped by the importer without an error.
+# Neither is visible after the fact, so both are gated here, before merge.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet PyYAML
+      - name: Validate questions, seeds and titles
+        run: python3 tools/validate_content.py
+      - name: Build the mkdocs preview (proves hooks.py still renders)
+        run: |
+          pip install --quiet -r requirements.txt
+          mkdocs build --strict
