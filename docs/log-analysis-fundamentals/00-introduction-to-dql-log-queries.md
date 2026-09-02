@@ -15,6 +15,15 @@ duration: 8
 
 # Introduction to DQL Log Queries
 
+!!! warning "These queries read your tenant's own logs — this byte seeds no sample data"
+    The DQL here is real and copy-pasteable, but `fetch logs` reads whatever log data
+    *your* tenant already holds. On a tenant with no log ingest configured every query
+    below returns **zero rows** — and that is the correct answer, not a fault.
+
+    Nothing is written to your tenant by this byte. If you want rows to look at, run these
+    against a tenant that has log ingest enabled, or narrow them to a service you know
+    is reporting.
+
 Dynatrace Query Language (DQL) is the primary way to explore observability data stored in Grail.
 
 ## Basic Log Query

@@ -22,6 +22,8 @@ Checks
              options are 2..6 and mutually distinct; dql operators are ones the app
              implements
   seed       LAB_SEED blocks parse and are internally consistent
+  layout     no LAB_SEED / LAB_QUESTION block is indented inside an admonition,
+             which would split the rendered box in half
   coupling   every `dql-verification` threshold is *achievable against the seed data
              declared in the same byte* — this is what keeps queries and data in step
 
@@ -284,6 +286,40 @@ def check_seed_coupling(where: str, q: dict, totals: dict) -> None:
                    f"{op} {want:g} — this question can never pass")
 
 
+def check_block_indentation(where: str, text: str) -> None:
+    """A LAB_SEED / LAB_QUESTION block must not be indented inside an admonition body.
+
+    The app renders a page by splitting the imported markdown on the placeholder tokens
+    the importer leaves behind (`<!-- SEED_PLACEHOLDER -->`,
+    `<!-- QUESTION_PLACEHOLDER_n -->`) and drawing a React component at each. That split
+    happens BEFORE admonitions are parsed, and it does not care about indentation. So a
+    block indented into an `!!! warning` body cuts the admonition in two: the learner sees
+    a yellow box with half its text, the rest of the body leaks out as bare paragraphs
+    below the button, and nothing errors.
+
+    Cheap to get wrong, invisible once shipped, so it is checked here.
+    """
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if not re.match(r"^(    |\t)+<!--\s*(LAB_SEED|LAB_QUESTION)\b", line):
+            continue
+        # Indented — is it inside an admonition body? Walk back to the owning marker.
+        for j in range(i - 1, -1, -1):
+            prev = lines[j]
+            if prev.strip() == "":
+                continue
+            if re.match(r"^(!!!|\?\?\?) ", prev):
+                kind = "LAB_SEED" if "LAB_SEED" in line else "LAB_QUESTION"
+                err(where, f"{kind} block at line {i + 1} is indented inside the "
+                           f"admonition opened at line {j + 1}. The renderer splits on the "
+                           "placeholder before admonitions are parsed, so the box would be "
+                           "cut in half. Put the admonition first, then the block at "
+                           "column 0.")
+                break
+            if not re.match(r"^(    |\t)", prev):
+                break
+
+
 def main() -> int:
     nav = load_nav()
     check_titles(nav)
@@ -303,6 +339,7 @@ def main() -> int:
             rp = str(path.relative_to(ROOT))
             text = path.read_text()
             check_page_h1(path)
+            check_block_indentation(rp, text)
 
             if idx == 0 and not text.lstrip("﻿").startswith("---"):
                 err(rp, f"first page of {title!r} has no front matter — the catalog card "

@@ -14,6 +14,16 @@ duration: 10
 
 # Pod Health & Restarts
 
+!!! warning "Reads live Kubernetes telemetry — this byte seeds no sample data"
+    `dt.kubernetes.container.restarts` is a metric produced by the Dynatrace Operator on a
+    monitored cluster. It lives in the reserved `dt.` namespace, so no app can write
+    stand-in values for it — and inventing a fake metric name would teach you a key that
+    does not exist on a real cluster.
+
+    So the queries here are the real ones. On a tenant with no monitored cluster they
+    return **zero rows**, correctly. Run them against a tenant with the Operator installed
+    to see data.
+
 Monitoring pod health is essential for Kubernetes operations. Key metrics include:
 
 - **Pod phase**: Running, Pending, Failed, Succeeded, Unknown

@@ -1,5 +1,11 @@
 # Defining SLOs in Dynatrace
 
+!!! warning "Illustrative SLI expressions — nothing is configured or seeded"
+    The metric expression and DQL below are worked examples of how an SLI is built. They
+    read `dt.service.request.*`, which exists only where services are monitored, and this
+    byte creates no SLO and writes no sample data. Read them for the shape of the
+    calculation; run them on a tenant with real service traffic.
+
 Dynatrace SLOs combine an SLI metric expression with a target and evaluation window.
 
 ## SLO Configuration Components

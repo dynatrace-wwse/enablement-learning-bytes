@@ -16,17 +16,14 @@ duration: 5
 
 # BizEvent Ingestion Validator
 
-This byte checks two different things, and it is worth being precise about which is which.
+!!! warning "Sample data — written inside the Enablement app's own namespace"
+    Press this first. It ingests 5 **sample** marker events into *this* tenant, through
+    the same business-events ingest path the app uses for its own telemetry.
 
-## 1. Can this tenant ingest and query a business event?
-
-Press the button. It ingests a handful of marker events into **this** tenant, through the
-same business-events ingest path the app uses for its own telemetry.
-
-Each record is stamped with your own seed scope, and the query below filters on it with
-`{{DT_SEED_SCOPE}}`. On a shared tenant that is what makes the result *yours*: without it
-you would be reading everyone's probes and the check would pass even if your own ingest
-had failed.
+    They are namespaced to the app (`event.provider` is
+    `dynatrace.enablement.learningbytes`) and stamped with your own seed scope, and the
+    query below filters on both. Nothing outside that namespace is read or written, so
+    your production data is never touched or counted.
 
 <!-- LAB_SEED
 dataset: ingest-probe
@@ -40,6 +37,15 @@ records:
     attributes:
       probe: bizevent-ingestion-validator
 -->
+
+This byte checks two different things, and it is worth being precise about which is which.
+
+## 1. Can this tenant ingest and query a business event?
+
+The scope filter is what makes the result *yours*. Without `{{DT_SEED_SCOPE}}` you would
+be reading everyone's probes on a shared tenant, and the check would pass even if your own
+ingest had failed.
+
 
 Now read it back:
 

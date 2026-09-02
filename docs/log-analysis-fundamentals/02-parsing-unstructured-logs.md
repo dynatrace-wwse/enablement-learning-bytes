@@ -1,5 +1,11 @@
 # Parsing Unstructured Logs
 
+!!! warning "Reads your tenant's own logs — nothing is seeded"
+    The `parse` example expects log lines shaped like `GET /api/users 200 45ms`. On a
+    tenant whose logs look different — or which has no logs at all — `isNotNull(httpStatus)`
+    filters everything out and you get zero rows. That is the pattern not matching, not an
+    error.
+
 Many logs contain useful data embedded in free-text messages. DQL's `parse` command extracts structured fields.
 
 ## Example: Parsing HTTP Status Codes
