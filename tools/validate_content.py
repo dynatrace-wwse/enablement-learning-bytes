@@ -24,6 +24,7 @@ Checks
   seed       LAB_SEED blocks parse and are internally consistent
   layout     no LAB_SEED / LAB_QUESTION block is indented inside an admonition,
              which would split the rendered box in half
+  prose      no {{VAR}} left in running prose, where it renders as the VALUE
   coupling   every `dql-verification` threshold is *achievable against the seed data
              declared in the same byte* — this is what keeps queries and data in step
 
@@ -320,6 +321,41 @@ def check_block_indentation(where: str, text: str) -> None:
                 break
 
 
+def check_placeholder_in_prose(where: str, text: str) -> None:
+    """A `{{VAR}}` in running prose renders as its VALUE, not as the variable name.
+
+    `substituteTemplateVars` runs over the whole step body, not just graded DQL. So a
+    sentence written as "Without `{{DT_SEED_SCOPE}}` your counts would be everyone's"
+    reaches the learner as "Without `devlove` your counts would be everyone's" — which
+    reads as nonsense and teaches nothing about the filter. Seen on a rendered page, not
+    guessed.
+
+    Inside a fenced code block it is correct and wanted: the learner copies a query with
+    their own scope already filled in. Same inside a LAB_QUESTION `dql:` field. Only
+    prose is flagged.
+    """
+    in_fence = False
+    in_block = False
+    for i, line in enumerate(text.split("\n"), start=1):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if re.match(r"<!--\s*(LAB_QUESTION|LAB_SEED|LAB_SOLUTION)\b", stripped):
+            in_block = True
+        if in_block and stripped.endswith("-->"):
+            in_block = False
+            continue
+        if in_fence or in_block:
+            continue
+        m = re.search(r"\{\{\s*([A-Z][A-Z0-9_]*)\s*\}\}", line)
+        if m:
+            warn(where, f"line {i}: {{{{{m.group(1)}}}}} appears in prose, where it is "
+                        "replaced by its value before the learner sees it. Name the field "
+                        "(e.g. `dt.enablement.seed.scope`) instead, or move it into a code "
+                        "block where substitution is what you want.")
+
+
 def main() -> int:
     nav = load_nav()
     check_titles(nav)
@@ -340,6 +376,7 @@ def main() -> int:
             text = path.read_text()
             check_page_h1(path)
             check_block_indentation(rp, text)
+            check_placeholder_in_prose(rp, text)
 
             if idx == 0 and not text.lstrip("﻿").startswith("---"):
                 err(rp, f"first page of {title!r} has no front matter — the catalog card "

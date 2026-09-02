@@ -42,9 +42,9 @@ This byte checks two different things, and it is worth being precise about which
 
 ## 1. Can this tenant ingest and query a business event?
 
-The scope filter is what makes the result *yours*. Without `{{DT_SEED_SCOPE}}` you would
-be reading everyone's probes on a shared tenant, and the check would pass even if your own
-ingest had failed.
+The scope filter is what makes the result *yours*. Without the
+`dt.enablement.seed.scope` filter you would be reading everyone's probes on a shared
+tenant, and the check would pass even if your own ingest had failed.
 
 
 Now read it back:

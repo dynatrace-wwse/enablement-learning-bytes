@@ -43,9 +43,9 @@ records:
 -->
 
 The scope filter is not decoration. On a shared tenant your classmates are seeding the
-same event types into the same provider at the same moment. Without `{{DT_SEED_SCOPE}}`
-your "40 cart additions" would be everyone's cart additions, and the check would pass
-whether or not you ever pressed the button.
+same event types into the same provider at the same moment. Without the
+`dt.enablement.seed.scope` filter your "40 cart additions" would be everyone's cart
+additions, and the check would pass whether or not you ever pressed the button.
 
 Business events are queried with DQL using `fetch bizevents`.
 
