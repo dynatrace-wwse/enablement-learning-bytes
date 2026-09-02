@@ -1,5 +1,14 @@
 # Cluster Events & Alerts
 
+!!! warning "Reads live Kubernetes events — this byte seeds no sample data"
+    `event.provider == "KUBERNETES_EVENT"` selects events the Dynatrace Operator ingests
+    from a real cluster. That provider value is reserved by the ingest path, so nothing can
+    be seeded to imitate it.
+
+    The queries below are the real ones and return **zero rows** on a tenant with no
+    monitored cluster. Note that this is itself the lesson of this page: a filter matching
+    nothing is not an error.
+
 Kubernetes events provide a running log of cluster-level activities. They're essential for troubleshooting.
 
 ## Important Event Types

@@ -1,5 +1,10 @@
 # Counting and Aggregating Logs
 
+!!! warning "Reads your tenant's own logs — nothing is seeded"
+    As on the previous step, these queries return rows only on a tenant that is already
+    ingesting logs. An empty result here means "no matching logs on this tenant", not a
+    broken query.
+
 Once you know how to filter, the next step is summarizing patterns.
 
 ## Counting by Status

@@ -1,19 +1,15 @@
 # Querying Business Events
 
-Business events are queried with DQL using `fetch bizevents`.
+!!! warning "Sample data — written inside the Enablement app's own namespace"
+    Load it first. This button ingests a small, fixed set of **sample** business events
+    into *this* tenant so the queries below have something to return.
 
-## Load the demo dataset
-
-The queries below are graded, so they need data. Press **Load demo data** to ingest a
-small, fixed set of business events into *this* tenant. It is bounded (77 records),
-idempotent, and every record carries `event.provider = "dynatrace.enablement.learningbytes"`
-so it can never be confused with your production traffic.
-
-Every record is also stamped with **your own** seed scope, and each query below filters
-on it with `{{DT_SEED_SCOPE}}`. That is not decoration: on a shared tenant your classmates
-are seeding the same event types into the same provider at the same moment. Without the
-scope filter your "40 cart additions" would be everyone's cart additions, and the check
-would pass whether or not you ever pressed the button.
+    Every record is namespaced to the app: `event.provider` is
+    `dynatrace.enablement.learningbytes`, and each record also carries **your own** seed
+    scope. Every query in this byte filters on both. Nothing outside that namespace is
+    read or written, so your production data is never touched, never queried and never
+    counted. The set is bounded (77 records) and idempotent — pressing the button twice
+    does not ingest it twice.
 
 <!-- LAB_SEED
 dataset: shop-funnel
@@ -45,6 +41,13 @@ records:
       total: [25.00, 50.00, 75.00, 100.00, 125.00, 150.00, 75.00, 100.00, 125.00, 150.00, 125.00, 100.00]
       paymentMethod: [card, card, paypal, card, invoice, card, paypal, card, card, invoice, card, paypal]
 -->
+
+The scope filter is not decoration. On a shared tenant your classmates are seeding the
+same event types into the same provider at the same moment. Without `{{DT_SEED_SCOPE}}`
+your "40 cart additions" would be everyone's cart additions, and the check would pass
+whether or not you ever pressed the button.
+
+Business events are queried with DQL using `fetch bizevents`.
 
 That dataset is deliberately a funnel that *leaks*: 40 cart additions become 25 checkouts
 become 12 purchases. A 30% cart-to-purchase conversion is the kind of number a business
@@ -169,7 +172,7 @@ explanation: '`fetch bizevents` is the DQL command to query business events stor
 
 <!-- LAB_QUESTION
 type: multiple-choice
-question: Your funnel query returns zero rows, but you know the events were ingested. Which is the LEAST likely explanation?
+question: A colleague says their funnel query returns zero rows on a tenant where the events were definitely ingested. Which explanation is the LEAST likely?
 options:
   - The query timeframe does not cover when the events were ingested
   - The `event.provider` or `event.type` string does not match exactly
@@ -179,5 +182,6 @@ correct: 2
 hint: Think about what DQL does when you filter on a value that matches nothing.
 explanation: A DQL filter that matches nothing is not an error — the query succeeds and
   returns zero rows. That is precisely why "no results" is so often a timeframe, a typo,
-  or a bucket problem rather than a missing-data problem.
+  or a bucket problem rather than a missing-data problem. (Your own queries above should
+  be returning rows; this one is about diagnosing someone else's empty result.)
 -->
