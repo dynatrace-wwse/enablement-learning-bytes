@@ -1,6 +1,7 @@
 ---
 description: A five-minute self-check that this tenant can ingest a business event and read it back with DQL, and that you can tell a local write apart from one routed to the central tenant. Retakeable.
 tags:
+  - classic
   - test
   - bizevents
   - dql

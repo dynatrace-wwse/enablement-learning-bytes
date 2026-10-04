@@ -1,6 +1,7 @@
 ---
 description: Assess your knowledge of monitoring Kubernetes clusters with Dynatrace. Covers pod health, resource utilization, and cluster events.
 tags:
+  - classic
   - cloud-ops
   - kubernetes
   - infrastructure

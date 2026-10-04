@@ -1,6 +1,7 @@
 ---
 description: Understand how Davis AI detects anomalies, correlates problems, and determines root cause. Test your knowledge of the Davis problem lifecycle.
 tags:
+  - classic
   - observability
   - davis-ai
   - root-cause
