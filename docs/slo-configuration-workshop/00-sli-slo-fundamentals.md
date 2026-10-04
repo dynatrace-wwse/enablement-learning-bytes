@@ -1,6 +1,7 @@
 ---
 description: The reasoning behind Service Level Objectives — choosing an SLI, sizing an error budget, and designing multi-window burn-rate alerts. Concepts and worked arithmetic; no tenant configuration is performed.
 tags:
+  - classic
   - sre
   - slos
   - reliability

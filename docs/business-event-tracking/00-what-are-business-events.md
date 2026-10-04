@@ -1,6 +1,7 @@
 ---
 description: Learn what business events are, how they are ingested, and how to query a conversion funnel with DQL. Ships a loadable demo dataset, so every query in this byte returns real data on your own tenant.
 tags:
+  - classic
   - business-analytics
   - bizevents
   - dql

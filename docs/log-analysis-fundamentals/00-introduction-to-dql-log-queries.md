@@ -1,10 +1,10 @@
 ---
 description: Learn to query, filter, and analyze log data using DQL. Covers basic log exploration, filtering by severity, and extracting patterns from unstructured logs.
 tags:
+  - classic
   - observability
   - logs
   - dql
-  - beginner
 difficulty: beginner
 duration: 8
 ---
